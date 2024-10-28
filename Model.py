@@ -8,6 +8,12 @@ import plotly.graph_objects as go
 
 class LoanApprovalModel:
     def __init__(self, data, target_column):
+        """Initializer method of the class
+
+        Args:
+            data (pd.DataFrame): Dataset for the model
+            target_column (str): Column that is the objective.
+        """
 
         # Probability of Default
         self.prd = None
@@ -27,6 +33,14 @@ class LoanApprovalModel:
             self.numeric_features.remove(self.target_column)
     
     def preprocess_data(self, X):
+        """Preprocessing method for categorical features, tranform to one hot encoding.
+
+        Args:
+            X (pd.DataFrame): Dataset with the categorical columns.
+
+        Returns:
+            X: Transformed Dataset
+        """
         self.onehot_encoder = OneHotEncoder(drop="first")
         categorical_features = self.categorical_features
         # Fit and transform the categorical features
@@ -38,6 +52,12 @@ class LoanApprovalModel:
         return X
     
     def benchmark_logistic_regression(self):
+        """Function to benchmark the dataset with a basic Logistic Regression model
+
+        Returns:
+            y_test: True labels of the test dataset.
+            y_prob: Probabilities predicted by the model.
+        """
         # Filter the data only for numeric features
         X = self.data[self.numeric_features]
         X.fillna(0, inplace=True)  # Fill missing values with 0
@@ -54,6 +74,12 @@ class LoanApprovalModel:
         return y_test, y_prob
 
     def plot_roc_auc(self, y_test, y_prob):
+        """Plot the ROC-AUC Curve.
+
+        Args:
+            y_test (np.array): True labels of the test dataset.
+            y_prob (np.array): Probabilities predicted by the model.
+        """
         auc_score = roc_auc_score(y_test, y_prob)
         fpr, tpr, _ = roc_curve(y_test, y_prob)
         # Create the Plotly figure for the ROC curve
@@ -79,6 +105,7 @@ class LoanApprovalModel:
         fig.show()
 
     def prepare_data(self):
+        """Separate the data into X and y, train and test."""
         # Prepare your features and target variable
         X = self.data.drop(columns=self.target_column)
         X = self.preprocess_data(X)
@@ -88,12 +115,21 @@ class LoanApprovalModel:
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     def calculate_scale_pos_weight(self, y):
+        """This function computes the weight for the positive class based on the 
+            ratio of negative to positive samples in the training data.
+
+        Args:
+            y (pd.Series): Binary labels of the training dataset (1 for positive class, 0 for negative class).
+
+        Returns:
+            The scale_pos_weight value.
+        """
         num_positive = sum(y)
         num_negative = len(y) - num_positive
         return num_negative / num_positive
 
     def train_xgboost_model(self):
-        
+        """Train the XGBoost Model."""
         # Split data and transform
         self.prepare_data()
         scale_pos_weight = self.calculate_scale_pos_weight(self.y_train)
@@ -101,6 +137,7 @@ class LoanApprovalModel:
         self.model.fit(self.X_train, self.y_train)
 
     def evaluate_model(self):
+        """Predict and evaluate the XGBoost Model"""
         predictions = self.model.predict(self.X_test)
         y_prob = self.model.predict_proba(self.X_test)[:, 1]
 

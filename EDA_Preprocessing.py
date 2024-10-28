@@ -53,26 +53,34 @@ class LoanEDA:
     @staticmethod
     def replace_outliers_with_median(series, perc):
         """
-        Reemplaza los valores atípicos en una serie (columna de un DataFrame) con la mediana.
-        Los valores atípicos se definen como aquellos que están por encima del percentil 90.
+        Replace outlier values in a series (column of a DataFrame) with the median.
+        Outliers are defined as those that are above the 90th percentile.
 
         Parameters:
-        series (pd.Series): La columna del DataFrame a la que se aplicará la función.
-        percentil (float): A partir de cual percentil sustituir valores.
+        ----------
+        series (pd.Series): The column of the DataFrame to which the function will be applied.
+        percentile (float): The percentile above which values will be replaced.
 
         Returns:
-        pd.Series: La columna con los valores atípicos reemplazados por la mediana.
+        -------
+        pd.Series: The column with outlier values replaced by the median.
         """
-        # Calcula el percentil establecido
-        p90 = series.quantile(perc)
+        # Calculates the percentil stablished
+        p = series.quantile(perc)
         
-        # Calcula la mediana
+        # Calculates the median
         median = series.median()
         
-        # Reemplaza los valores mayores al percentil 90 por la mediana
-        return series.apply(lambda x: median if x > p90 else x)
+        # Replace the values greater than the selected percentile with the median
+        return series.apply(lambda x: median if x > p else x)
     
     def replace_outliers(self, columns: list, perc=0.95):
+        """Function that calls the replace outliers method in an iterable 
+
+        Args:
+            columns (list): List of the columns with outliers to be replaced
+            perc (float, optional): Percentil limit for the replacement. Defaults to 0.95.
+        """
         df = self.data
         for i in columns:
             df[i] = self.replace_outliers_with_median(df[i], perc=perc)

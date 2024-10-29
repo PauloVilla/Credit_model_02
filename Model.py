@@ -1,8 +1,10 @@
+import pickle
 import pandas as pd
 from xgboost import XGBClassifier
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.metrics import classification_report, roc_auc_score, roc_curve
 import plotly.graph_objects as go
 
@@ -19,7 +21,6 @@ class LoanApprovalModel:
         self.prd = None
         # Exposure at Default
         self.ead = None
-
         # Other params for the class
         self.data = data
         self.target_column = target_column
@@ -128,14 +129,22 @@ class LoanApprovalModel:
         num_negative = len(y) - num_positive
         return num_negative / num_positive
 
-    def train_xgboost_model(self):
+    def train_xgboost_model(self, k_folds: 5):
         """Train the XGBoost Model."""
         # Split data and transform
         self.prepare_data()
+        kf = StratifiedKFold(n_splits=k_folds, shuffle=True, random_state=42)
+        # Calculate the scale pos weight
         scale_pos_weight = self.calculate_scale_pos_weight(self.y_train)
         self.model = XGBClassifier(eval_metric='auc', scale_pos_weight=scale_pos_weight)
+        # Perform cross-validation
+        cv_scores = cross_val_score(self.model, self.X_train, self.y_train, cv=kf, scoring='roc_auc')
+        # Calculate mean AUC score
+        mean_auc_score = cv_scores.mean()
+        print(f"Cross-Validation AUC Scores for each fold: {cv_scores}")
+        print(f"Mean AUC score across {k_folds} folds: {mean_auc_score:.4f}")
         self.model.fit(self.X_train, self.y_train)
-
+    
     def evaluate_model(self):
         """Predict and evaluate the XGBoost Model"""
         predictions = self.model.predict(self.X_test)
@@ -154,3 +163,33 @@ class LoanApprovalModel:
         """Set EAD as the loan amount for approved applications."""
         self.ead = self.X_test['loan_amnt']
         return self.ead
+
+    def save_model(self, file_path):
+        """
+        Save the trained XGBoost model as a pickle file.
+
+        Parameters:
+        ----------
+        file_path (str): The path where the model should be saved.
+        """
+        if self.model is not None:
+            with open(file_path, 'wb') as file:
+                pickle.dump(self.model, file)
+            print(f"Model saved to {file_path}")
+        else:
+            print("No model to save. Train the model first.")
+
+    def save_encoder(self, file_path):
+        """
+        Save the fitted OneHotEncoder as a pickle file.
+
+        Parameters:
+        ----------
+        file_path (str): The path where the encoder should be saved.
+        """
+        if hasattr(self, 'onehot_encoder') and self.onehot_encoder is not None:
+            with open(file_path, 'wb') as file:
+                pickle.dump(self.onehot_encoder, file)
+            print(f"Encoder saved to {file_path}")
+        else:
+            print("No encoder to save. Ensure the data is preprocessed first.")

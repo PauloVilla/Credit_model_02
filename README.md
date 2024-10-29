@@ -6,4 +6,5 @@ This project implements a credit risk model aimed at evaluating the likelihood o
 
 * `Credit Model.pdf`: Detailed analysis report covering the interest rate formation for the credit model.
 * `Code/`: Directory containing all code for model loading, EDA, training, Forward, and risk analysis.
+  * `proyecto2.ipynb`: Main notebook for model development, making use of classes and functions in this folder.
 * `Diagrams/`: Visuals explaining code and class structures for easier understanding and future reference.
